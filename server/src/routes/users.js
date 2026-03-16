@@ -9,18 +9,29 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     const user = await getUser(req.user.email);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const submissions = await getSubmissions(req.user.email);
+    let submissions = [];
+    try {
+      submissions = await getSubmissions(req.user.email);
+    } catch (subErr) {
+      console.warn('Submissions fetch failed (likely missing index):', subErr.message);
+    }
     
-    // Calculate global rank
-    const usersSnap = await db.collection('users').orderBy('problemsSolved', 'desc').get();
-    const rank = usersSnap.docs.findIndex(doc => doc.id === req.user.email) + 1;
+    // Calculate global rank safely
+    let rank = 'N/A';
+    try {
+      const usersSnap = await db.collection('users').orderBy('problemsSolved', 'desc').get();
+      const foundIndex = usersSnap.docs.findIndex(doc => doc.id === req.user.email);
+      rank = foundIndex !== -1 ? foundIndex + 1 : 'N/A';
+    } catch (rankErr) {
+      console.warn('Rank calculation error:', rankErr.message);
+    }
 
     res.json({ 
       stats: {
-        problemsSolved: user.solvedProblems?.size || 0,
+        problemsSolved: user.solvedProblems?.length || 0,
         streak: user.streak || 0,
-        rank: rank || 'N/A',
-        topicsMastered: 0, // Simplified
+        rank: rank,
+        topicsMastered: 0,
         badge: 'Beginner'
       },
       heatmap: user.dailyActivity || {},
@@ -28,7 +39,8 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
       recommended: []
     });
   } catch (err) {
-    res.status(500).json({ error: 'Dashboard failed' });
+    console.error('Dashboard Error:', err);
+    res.status(500).json({ error: 'Dashboard failed', message: err.message });
   }
 });
 

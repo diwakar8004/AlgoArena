@@ -29,11 +29,17 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
-      const { data } = await api.post('/auth/google', { idToken: 'mock-dev-token' });
+      const { signInWithPopup } = await import('firebase/auth');
+      const { auth, googleProvider } = await import('../lib/firebase');
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      
+      const { data } = await api.post('/auth/google', { idToken });
       login(data.user, data.accessToken);
       navigate('/dashboard');
     } catch (err) {
-      setError('Google login failed');
+      console.error(err);
+      setError(err.message || 'Google login failed');
     }
   };
 

@@ -43,13 +43,15 @@ const getUser = async (email) => {
   const doc = await db.collection('users').doc(email).get();
   if (!doc.exists) return null;
   const data = doc.data();
-  return { ...data, solvedProblems: new Set(data.solvedProblems || []) };
+  // Ensure solvedProblems is an array for JSON serialization
+  const solvedProblems = Array.isArray(data.solvedProblems) ? data.solvedProblems : [];
+  return { ...data, solvedProblems };
 };
 
 const saveUser = async (email, userData) => {
   const dataToSave = {
     ...userData,
-    solvedProblems: Array.from(userData.solvedProblems || [])
+    solvedProblems: Array.isArray(userData.solvedProblems) ? userData.solvedProblems : Array.from(userData.solvedProblems || [])
   };
   await db.collection('users').doc(email).set(dataToSave, { merge: true });
 };

@@ -5,20 +5,25 @@ const admin = require('firebase-admin');
 // Or you can initialize with specific config:
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault()
-    });
-    console.log('🔥 Firebase Admin initialized with Application Default Credentials');
-  } catch (error) {
-    console.warn('⚠️ Firebase Admin failed to initialize with ADCs. Falling back to project-id check.');
-    if (process.env.FIREBASE_PROJECT_ID) {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
       admin.initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID
+        credential: admin.credential.cert(serviceAccount)
       });
-      console.log(`🔥 Firebase Admin initialized with Project ID: ${process.env.FIREBASE_PROJECT_ID}`);
+      console.log('🔥 Firebase Admin initialized with service account from environment variable');
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      admin.initializeApp({
+        credential: admin.credential.applicationDefault()
+      });
+      console.log('🔥 Firebase Admin initialized with Application Default Credentials');
     } else {
-      console.error('❌ Firebase Admin initialization failed: Set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_PROJECT_ID');
+      admin.initializeApp({
+        projectId: process.env.FIREBASE_PROJECT_ID || 'dsa-project-8004'
+      });
+      console.log('🔥 Firebase Admin initialized with Project ID (caution: permissions may be limited)');
     }
+  } catch (error) {
+    console.error('❌ Firebase Admin initialization failed:', error.message);
   }
 }
 
