@@ -14,7 +14,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5001',
+        target: 'https://algoarena-e0st.onrender.com',
         changeOrigin: true,
       },
     },
